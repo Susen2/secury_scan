@@ -1,0 +1,42 @@
+{
+  "generated_at": "2026-05-12T22:24:13.823852",
+  "scanned_files": 4,
+  "total_findings": 5,
+  "findings": [
+    {
+      "severity": "high",
+      "category": "insecure_deserialization",
+      "title": "Unsafe JSON deserialization from LLM tool call arguments",
+      "description": "In agent.py, line 148, the function arguments from the LLM tool call are deserialized using json.loads() without validation. An attacker could craft a malicious LLM response that injects unexpected keys or values into the arguments, potentially leading to injection or logic flaws. While the immediate risk is limited because the arguments are only used to extract the 'city' field, this pattern is dangerous if the arguments are used in other contexts.",
+      "remediation": "Validate the structure and content of the deserialized arguments. Use a Pydantic model to parse and validate the arguments, ensuring only expected fields are present and that they conform to expected types and constraints."
+    },
+    {
+      "severity": "medium",
+      "category": "insecure_deserialization",
+      "title": "Unsafe JSON deserialization of tool call result",
+      "description": "In agent.py, line 162, the result of a tool call (which may contain an error message) is serialized to JSON and then passed to the LLM. If an attacker can control the error message (e.g., via a malicious API response), they could inject arbitrary JSON that might be misinterpreted by the LLM or downstream code. This is a form of injection via deserialization.",
+      "remediation": "Sanitize or validate the content before serialization. Avoid including raw error messages in JSON responses. Use a fixed schema for tool call results and strip any unexpected fields."
+    },
+    {
+      "severity": "medium",
+      "category": "information_disclosure",
+      "title": "Error messages may leak sensitive information",
+      "description": "In agent.py, lines 119-121 and 137-139, exception messages are directly returned to the user. These messages may contain sensitive information such as API keys, internal paths, or stack traces. For example, an LLM timeout error might reveal the base URL or other configuration details.",
+      "remediation": "Log the full error details server-side and return a generic error message to the user. For example: 'An error occurred while processing your request. Please try again later.'"
+    },
+    {
+      "severity": "medium",
+      "category": "cors_misconfiguration",
+      "title": "Overly permissive CORS policy",
+      "description": "In main.py, line 12, the CORS middleware is configured with allow_origins=['*'], which allows any origin to make requests to the API. This can lead to cross-origin attacks if the API is used in a browser context, especially if it handles sensitive data or authentication.",
+      "remediation": "Restrict allow_origins to a specific list of trusted origins. For example: allow_origins=['https://your-frontend-domain.com']."
+    },
+    {
+      "severity": "low",
+      "category": "hardcoded_credentials",
+      "title": "API keys loaded from environment variables but not validated",
+      "description": "In config.py, API keys are loaded from environment variables with empty string defaults. If these variables are not set, the application may fail in unexpected ways or use empty keys. While not a direct vulnerability, this can lead to information disclosure or service degradation.",
+      "remediation": "Validate that required API keys are present at startup and fail with a clear error message if they are missing. Consider using a configuration validation library."
+    }
+  ]
+}
